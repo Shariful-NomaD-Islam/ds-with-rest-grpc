@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package worker;
+option go_package = "./pb";
+
+service WorkerService {
+    rpc ProcessTask(TaskRequest) returns (TaskResponse);
+    rpc GetStatus(StatusRequest) returns (StatusResponse);
+}
+
+message TaskRequest {
+    string task_id = 1;
+    string task_type = 2;
+    string payload = 3;
+}
+
+message TaskResponse {
+    string task_id = 1;
+    bool success = 2;
+    string result = 3;
+    string error = 4;
+}
+
+message StatusRequest {
+    string worker_id = 1;
+}
+
+message StatusResponse {
+    string worker_id = 1;
+    string status = 2;
+    int32 active_tasks = 3;
+}

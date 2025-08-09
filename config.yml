@@ -1,0 +1,16 @@
+server:
+  port: "8080"
+  host: "localhost"
+
+workers:
+  - url: "localhost:50051"
+    id: "worker-1"
+  - url: "localhost:50052"
+    id: "worker-2"
+
+grpc:
+  timeout: "10s"
+  max_retries: 3
+
+logging:
+  level: "warn"

@@ -4,15 +4,27 @@
 
 echo "Testing Master-Worker System"
 
+# Function to clean up processes
+cleanup() {
+    echo "Stopping all processes..."
+    pkill -f "master-worker-system/cmd/master"
+    pkill -f "master-worker-system/cmd/worker"
+    echo "Cleanup complete."
+}
+
+# Trap signals to ensure cleanup on exit
+trap cleanup EXIT
+
+# Ensure no old processes are running
+cleanup
+
 # Start worker 1 in the background
 echo "Starting worker 1..."
 go run ../cmd/worker/main.go -port 50051 -id worker-1 &
-WORKER1_PID=$!
 
 # Start worker 2 in the background
 echo "Starting worker 2..."
 go run ../cmd/worker/main.go -port 50052 -id worker-2 &
-WORKER2_PID=$!
 
 # Wait a moment for workers to start
 sleep 2
@@ -20,7 +32,6 @@ sleep 2
 # Start master in the background
 echo "Starting master..."
 go run ../cmd/master/main.go -config ../config.yml &
-MASTER_PID=$!
 
 # Wait for master to start
 sleep 3
@@ -42,9 +53,5 @@ curl -s http://localhost:8080/status | jq .
 # Test getting specific worker status
 echo "Getting specific worker status..."
 curl -s http://localhost:8080/status/worker-1 | jq .
-
-# Clean up - stop all processes
-echo "Stopping all processes..."
-kill $MASTER_PID $WORKER1_PID $WORKER2_PID
 
 echo "Test complete!"

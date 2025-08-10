@@ -2,13 +2,13 @@ package main
 
 import (
 	"flag"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"master-worker-system/internal/config"
-	"master-worker-system/internal/master"
+	"github.com/Shariful-NomaD-Islam/ds-with-rest-grpc/internal/config"
+	"github.com/Shariful-NomaD-Islam/ds-with-rest-grpc/internal/logger"
+	"github.com/Shariful-NomaD-Islam/ds-with-rest-grpc/internal/master"
 )
 
 func main() {
@@ -16,30 +16,33 @@ func main() {
 	flag.Parse()
 
 	// Load configuration
-	config, err := config.LoadConfig(*configFile)
+	cfg, err := config.LoadConfig(*configFile)
 	if err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
+		logger.GetLogger().Fatalf("Failed to load configuration: %v", err)
 	}
 
-	log.Printf("Loaded configuration from %s", *configFile)
-	log.Printf("Server will start on %s", config.GetServerAddress())
-	log.Printf("Configured workers: %d", len(config.Workers))
+	// Initialize logger with configured level
+	logger.Init(cfg.Logging.Level)
+
+	logger.GetLogger().Infof("Loaded configuration from %s", *configFile)
+	logger.GetLogger().Infof("Server will start on %s", cfg.GetServerAddress())
+	logger.GetLogger().Infof("Configured workers: %d", len(cfg.Workers))
 
 	// Initialize worker pool
-	workerPool, err := master.NewWorkerPool(config)
+	workerPool, err := master.NewWorkerPool(cfg)
 	if err != nil {
-		log.Fatalf("Failed to initialize worker pool: %v", err)
+		logger.GetLogger().Fatalf("Failed to initialize worker pool: %v", err)
 	}
 	defer workerPool.Close()
 
 	// Setup HTTP server
-	router := master.SetupRoutes(workerPool, config)
+	router := master.SetupRoutes(workerPool, cfg)
 
 	// Start server
-	log.Printf("Master starting HTTP server on %s", config.GetServerAddress())
+	logger.GetLogger().Infof("Master starting HTTP server on %s", cfg.GetServerAddress())
 	go func() {
-		if err := router.Run(config.GetServerAddress()); err != nil {
-			log.Fatalf("Failed to start HTTP server: %v", err)
+		if err := router.Run(cfg.GetServerAddress()); err != nil {
+			logger.GetLogger().Fatalf("Failed to start HTTP server: %v", err)
 		}
 	}()
 
@@ -48,5 +51,5 @@ func main() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	<-c
 
-	log.Println("Master shutting down...")
+	logger.GetLogger().Info("Master shutting down...")
 }

@@ -3,12 +3,12 @@ package master
 import (
 	"context"
 	"fmt"
-	"log"
 	"sync/atomic"
 	"time"
 
-	"master-worker-system/internal/config"
-	pb "master-worker-system/pb"
+	"github.com/Shariful-NomaD-Islam/ds-with-rest-grpc/internal/config"
+	"github.com/Shariful-NomaD-Islam/ds-with-rest-grpc/internal/logger"
+	pb "github.com/Shariful-NomaD-Islam/ds-with-rest-grpc/pb"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -25,7 +25,7 @@ type WorkerClient struct {
 type WorkerPool struct {
 	workers []*WorkerClient
 	config  *config.Config
-	counter atomic.Int64 
+	counter atomic.Int64
 }
 
 func NewWorkerPool(config *config.Config) (*WorkerPool, error) {
@@ -37,7 +37,7 @@ func NewWorkerPool(config *config.Config) (*WorkerPool, error) {
 	timeout := config.GetGRPCTimeout()
 
 	for _, workerConfig := range config.Workers {
-		log.Printf("Connecting to worker %s at %s", workerConfig.ID, workerConfig.URL)
+		logger.GetLogger().Infof("Connecting to worker %s at %s", workerConfig.ID, workerConfig.URL)
 
 		conn, err := grpc.Dial(
 			workerConfig.URL,
@@ -45,7 +45,7 @@ func NewWorkerPool(config *config.Config) (*WorkerPool, error) {
 			grpc.WithTimeout(timeout),
 		)
 		if err != nil {
-			log.Printf("Failed to connect to worker %s at %s: %v", workerConfig.ID, workerConfig.URL, err)
+			logger.GetLogger().Errorf("Failed to connect to worker %s at %s: %v", workerConfig.ID, workerConfig.URL, err)
 			continue
 		}
 
@@ -72,14 +72,14 @@ func (p *WorkerPool) ProcessTask(taskID, taskType, payload string) (*pb.TaskResp
 	}
 
 	// Simple round-robin selection
-    workerIdx := p.counter.Add(1) % int64(len(p.workers))
+	workerIdx := p.counter.Add(1) % int64(len(p.workers))
 
-    // Optional: reset the counter when it wraps around
-    if workerIdx == 0 {
-        p.counter.Store(0)
-    }
+	// Optional: reset the counter when it wraps around
+	if workerIdx == 0 {
+		p.counter.Store(0)
+	}
 
-    worker := p.workers[workerIdx]
+	worker := p.workers[workerIdx]
 
 	ctx, cancel := context.WithTimeout(context.Background(), worker.timeout)
 	defer cancel()
@@ -123,7 +123,7 @@ func (p *WorkerPool) GetAllWorkerStatuses() (map[string]*pb.StatusResponse, erro
 
 		status, err := worker.client.GetStatus(ctx, req)
 		if err != nil {
-			log.Printf("Failed to get status for worker %s: %v", worker.id, err)
+			logger.GetLogger().Warnf("Failed to get status for worker %s: %v", worker.id, err)
 			continue
 		}
 

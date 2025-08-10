@@ -13,4 +13,4 @@ grpc:
   max_retries: 3
 
 logging:
-  level: "warn"
+  level: "info"

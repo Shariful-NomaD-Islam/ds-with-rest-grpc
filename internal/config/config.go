@@ -2,10 +2,14 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"time"
 
 	"gopkg.in/yaml.v3"
+)
+
+const (
+	DefaultGRPCTimeout = 10 * time.Second
 )
 
 type Config struct {
@@ -35,7 +39,7 @@ type LoggingConfig struct {
 }
 
 func LoadConfig(filename string) (*Config, error) {
-	data, err := ioutil.ReadFile(filename)
+	data, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
@@ -71,17 +75,25 @@ func (c *Config) Validate() error {
 		}
 	}
 
+	// Validate logging level
+	switch c.Logging.Level {
+	case "debug", "info", "warn", "error", "fatal", "": // "" allows for default
+		// Valid
+	default:
+		return fmt.Errorf("invalid logging level: %s. Must be one of debug, info, warn, error, fatal", c.Logging.Level)
+	}
+
 	return nil
 }
 
 func (c *Config) GetGRPCTimeout() time.Duration {
 	if c.GRPC.Timeout == "" {
-		return 10 * time.Second
+		return DefaultGRPCTimeout
 	}
 
 	timeout, err := time.ParseDuration(c.GRPC.Timeout)
 	if err != nil {
-		return 10 * time.Second
+		return DefaultGRPCTimeout
 	}
 
 	return timeout

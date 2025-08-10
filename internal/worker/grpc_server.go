@@ -3,11 +3,11 @@ package worker
 import (
 	"context"
 	"fmt"
-	"log"
 	"sync/atomic"
 	"time"
 
-	pb "master-worker-system/pb"
+	"github.com/Shariful-NomaD-Islam/ds-with-rest-grpc/internal/logger"
+	pb "github.com/Shariful-NomaD-Islam/ds-with-rest-grpc/pb"
 )
 
 type WorkerServer struct {
@@ -27,7 +27,7 @@ func (s *WorkerServer) ProcessTask(ctx context.Context, req *pb.TaskRequest) (*p
 	atomic.AddInt32(&s.activeTasks, 1)
 	defer atomic.AddInt32(&s.activeTasks, -1)
 
-	log.Printf("Worker %s processing task %s of type %s", s.workerID, req.TaskId, req.TaskType)
+	logger.GetLogger().Infof("Worker %s processing task %s of type %s", s.workerID, req.TaskId, req.TaskType)
 
 	// Simulate task processing
 	time.Sleep(2 * time.Second)

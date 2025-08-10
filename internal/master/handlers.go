@@ -5,9 +5,11 @@ import (
 	"net/http"
 	"time"
 
-	"master-worker-system/internal/config"
+	"github.com/Shariful-NomaD-Islam/ds-with-rest-grpc/internal/config"
+	"github.com/Shariful-NomaD-Islam/ds-with-rest-grpc/internal/logger"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type TaskRequest struct {
@@ -58,11 +60,13 @@ func SetupRoutes(workerPool *WorkerPool, config *config.Config) *gin.Engine {
 		}
 
 		// Generate task ID
-		taskID := fmt.Sprintf("task-%d", time.Now().UnixNano())
+		taskID := uuid.New().String()
+		logger.GetLogger().Infof("Received task: %s, Type: %s, Payload: %s", taskID, req.TaskType, req.Payload)
 
 		// Process task via worker
 		resp, err := workerPool.ProcessTask(taskID, req.TaskType, req.Payload)
 		if err != nil {
+			logger.GetLogger().Errorf("Failed to process task %s: %v", taskID, err)
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": fmt.Sprintf("Failed to process task: %v", err),
 			})
@@ -89,6 +93,7 @@ func SetupRoutes(workerPool *WorkerPool, config *config.Config) *gin.Engine {
 
 		resp, err := workerPool.GetWorkerStatus(workerID)
 		if err != nil {
+			logger.GetLogger().Errorf("Failed to get status for worker %s: %v", workerID, err)
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": fmt.Sprintf("Failed to get worker status: %v", err),
 			})
@@ -108,6 +113,7 @@ func SetupRoutes(workerPool *WorkerPool, config *config.Config) *gin.Engine {
 	r.GET("/status", func(c *gin.Context) {
 		statuses, err := workerPool.GetAllWorkerStatuses()
 		if err != nil {
+			logger.GetLogger().Errorf("Failed to get all workers status: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": fmt.Sprintf("Failed to get workers status: %v", err),
 			})
